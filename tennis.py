@@ -97,6 +97,8 @@ def get_tennis_lines():
 # get_tennis_lines_today()
 
 def search_tennis_lines(name_to_search):
+    name_to_search = name_to_search.capitalize()
+    print(name_to_search)
 
     # r = requests.get('http://api.ps3838.com/v1/fixtures?sportid=33&islive=2', headers={"Authorization": token})
     r = requests.get('http://api.ps3838.com/v1/fixtures?sportid=33&', headers={"Authorization": token})
@@ -138,5 +140,5 @@ def search_tennis_lines(name_to_search):
 # x = (search_tennis_lines('Lopez'))
 # print(x[0])
 
-
+print(search_tennis_lines('fatic'))
 
