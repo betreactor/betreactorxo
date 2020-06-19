@@ -124,8 +124,9 @@ def search_tennis_lines(name_to_search):
                 # PIN_EVENT_ID_LIST_FRESH.append(PIN_EVENT_ID)
                 PLAYER_A =  str(r['league'][i]['events'][i2]['home'])
                 PLAYER_B = str(r['league'][i]['events'][i2]['away'])
-                # STARTS = r['league'][i]['events'][i2]['starts']
-                SEARCH_RESULTS = PLAYER_A, PLAYER_B, PIN_EVENT_ID
+                STARTS_ISO8601 = r['league'][i]['events'][i2]['starts']
+
+                SEARCH_RESULTS = PIN_EVENT_ID, PLAYER_A, PLAYER_B, STARTS_ISO8601
                 # print(SEARCH_RESULTS)
 
                 if name_to_search in PLAYER_A:
@@ -140,5 +141,5 @@ def search_tennis_lines(name_to_search):
 # x = (search_tennis_lines('Lopez'))
 # print(x[0])
 
-print(search_tennis_lines('fatic'))
+print(search_tennis_lines('zaja'))
 

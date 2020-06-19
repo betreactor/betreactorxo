@@ -1,5 +1,6 @@
 import psycopg2
 import uuid
+from datetime import datetime, timedelta
 import requests
 import re
 import os
@@ -303,7 +304,29 @@ def update_odds_PIN():
         # leagueid = pindata[1]
 
 
+def game_time(start):
+    format = "%Y-%m-%dT%H:%M:%SZ"
+    time_now = datetime.now() + timedelta(hours=-3)
+    time_now = time_now.isoformat('T')
 
+    time_now = datetime.strptime(time_now, '%Y-%m-%dT%H:%M:%S.%f')
+    time_now = time_now.strftime(format)
+
+
+    starts = start
+
+
+
+    datetime_obj = datetime.strptime(starts, format)
+    datetime_obj2 = datetime.strptime(time_now, format)
+
+    remains = datetime_obj - datetime_obj2
+    str_remains = str(remains)[:-3]
+
+    gamestart = datetime.strptime(starts, "%Y-%m-%dT%H:%M:%SZ") + timedelta(hours=+3)
+    date_time_starts = gamestart.strftime("%A, %d %B %H:%M")
+
+    return (date_time_starts, str_remains)
 
 # calculation
 # surebet
