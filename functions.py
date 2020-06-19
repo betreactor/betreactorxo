@@ -1,5 +1,6 @@
 import psycopg2
 import uuid
+from decimal import *
 from datetime import datetime, timedelta
 import requests
 import re
@@ -11,6 +12,18 @@ from pathlib import Path  # python3 only
 env_path = Path('d:') / '.env'
 load_dotenv(dotenv_path=env_path)
 from blockcypher import get_address_details
+
+
+def q(odd):
+    odd = Decimal(odd)
+    odd = odd.quantize(Decimal("1.000"))
+    return odd
+
+def hdp(points):
+    points = float(points)
+    return points
+
+
 
 token = os.getenv("ps3838")
 hostdb = os.getenv("host")
@@ -83,7 +96,7 @@ def check_btc_confs():
         print(conf_str)
         print('================')
 
-
+# print(check_btc_confs())
 
 # SPORT BETTING
 # DB

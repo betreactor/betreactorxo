@@ -1,5 +1,5 @@
 from functions import *
-url = tgtoken
+# url = tgtoken
 
 
 def get_tennis_lines():
@@ -78,7 +78,7 @@ def get_tennis_lines():
     EVENT_TITLE = (EVENT_TITLE_LIST[SELECT_ID])
     PIN_LINEID = (PIN_EVENT_ID_LIST_FRESH[SELECT_ID])
 
-    r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids='+LEAGUE_ID_STR, headers={"Authorization": token})
+    r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&islive=2&oddsformat=decimal&leagueids='+LEAGUE_ID_STR, headers={"Authorization": token})
     r2 = r2.json()
 
     # print(r2)
@@ -99,15 +99,14 @@ def get_tennis_lines():
 def search_tennis_lines(name_to_search):
     name_to_search = name_to_search.capitalize()
     print(name_to_search)
-
-    # r = requests.get('http://api.ps3838.com/v1/fixtures?sportid=33&islive=2', headers={"Authorization": token})
-    r = requests.get('http://api.ps3838.com/v1/fixtures?sportid=33&', headers={"Authorization": token})
+    r = requests.get('http://api.ps3838.com/v1/fixtures?sportid=33&islive=2', headers={"Authorization": token})
     r = r.json()
     LEAGUE_LEN = len(r['league'])
 
+    print(r)
     # name_to_search = input('Поиск по имени игрока:')
 
-    COUNT1 = 1
+    COUNT1 = 0
     COUNT2 = 1
     SEARCH_RESULTS_LIST = []
 
@@ -121,25 +120,86 @@ def search_tennis_lines(name_to_search):
 
             for i2 in range(0, EVENTS_IN_LEAGUE_LEN):
                 PIN_EVENT_ID = r['league'][i]['events'][i2]['id']
-                # PIN_EVENT_ID_LIST_FRESH.append(PIN_EVENT_ID)
-                PLAYER_A =  str(r['league'][i]['events'][i2]['home'])
-                PLAYER_B = str(r['league'][i]['events'][i2]['away'])
+                PLAYER_A = str(r['league'][i]['events'][i2]['home'])
+                PLAYER_B =  str(r['league'][i]['events'][i2]['away'])
                 STARTS_ISO8601 = r['league'][i]['events'][i2]['starts']
+                LEAGUE_ID_FOR_FOUND_EVENT = r['league'][i]['id']
 
-                SEARCH_RESULTS = PIN_EVENT_ID, PLAYER_A, PLAYER_B, STARTS_ISO8601
+                SEARCH_RESULTS = PIN_EVENT_ID, PLAYER_A, PLAYER_B, STARTS_ISO8601, LEAGUE_ID_FOR_FOUND_EVENT
+
                 # print(SEARCH_RESULTS)
 
                 if name_to_search in PLAYER_A:
                     SEARCH_RESULTS_LIST.append(SEARCH_RESULTS)
+                    COUNT1 += 1
+                    continue
                 elif name_to_search in PLAYER_B:
                     SEARCH_RESULTS_LIST.append(SEARCH_RESULTS)
+                    COUNT1 += 1
+                    continue
                 continue
 
+    # return SEARCH_RESULTS_LIST
 
-    # SEARCH_RESULTS_LIST_LEN = len(SEARCH_RESULTS_LIST)
-    return SEARCH_RESULTS_LIST
-# x = (search_tennis_lines('Lopez'))
-# print(x[0])
 
-print(search_tennis_lines('zaja'))
+    SEARCH_RESULTS_LIST_LEN = len(SEARCH_RESULTS_LIST)
+    print('длина списка ', SEARCH_RESULTS_LIST_LEN)
+    count3 = 1
 
+    for i3 in range (0, SEARCH_RESULTS_LIST_LEN):
+        print (count3, SEARCH_RESULTS_LIST[i3][1]+' - '+SEARCH_RESULTS_LIST[i3][2], SEARCH_RESULTS_LIST[i3][0])
+        PIN_LINEID = int(SEARCH_RESULTS_LIST[i3][0])
+        PLAYER_A = SEARCH_RESULTS_LIST[i3][1]
+        PLAYER_B = SEARCH_RESULTS_LIST[i3][2]
+        count3 += 1
+
+
+
+    SELECT_N = int(input('Enter game ID:'))-1
+
+    PIN_EVENT_ID = SEARCH_RESULTS_LIST[SELECT_N][0]
+    LEAGUE_ID_STR = str(SEARCH_RESULTS_LIST[SELECT_N][4])
+
+
+
+
+    r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR, headers={"Authorization": token})
+    r2 = r2.json()
+
+    EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
+
+
+    for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
+        idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
+        if idpintemp == PIN_LINEID:
+            PIN_LINEID = (r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
+            PIN_ML_ODDS = ()
+            ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
+            ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
+            POINTS_PIN_HDP_MAIN = hdp(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['hdp'])
+            ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
+            ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
+
+            print(r2['leagues'][0]['events'][i4])
+            print(PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_A)
+            print(PLAYER_B, ODD_PIN_MATCH_FT_PLAYER_B)
+            print(POINTS_PIN_HDP_MAIN, ODD_PIN_HDP_MAIN_PLAYER_A, ODD_PIN_HDP_MAIN_PLAYER_B)
+
+
+
+
+        else:
+            continue
+
+
+
+
+
+
+
+
+
+
+
+
+x = (search_tennis_lines('Giron'))
