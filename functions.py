@@ -18,8 +18,7 @@ def q(odd):
     odd = Decimal(odd)
     odd = odd.quantize(Decimal("1.000"))
     return odd
-
-def hdp(points):
+def p(points):
     points = float(points)
     return points
 
@@ -317,7 +316,7 @@ def update_odds_PIN():
         # leagueid = pindata[1]
 
 
-def game_time(start):
+def EVENT_START(start):
     format = "%Y-%m-%dT%H:%M:%SZ"
     time_now = datetime.now() + timedelta(hours=-3)
     time_now = time_now.isoformat('T')
@@ -337,7 +336,7 @@ def game_time(start):
     str_remains = str(remains)[:-3]
 
     gamestart = datetime.strptime(starts, "%Y-%m-%dT%H:%M:%SZ") + timedelta(hours=+3)
-    date_time_starts = gamestart.strftime("%A, %d %B %H:%M")
+    date_time_starts = gamestart.strftime("%A, %d %B %H:%M /")
 
     return (date_time_starts, str_remains)
 
