@@ -12,6 +12,8 @@ from pathlib import Path  # python3 only
 env_path = Path('d:') / '.env'
 load_dotenv(dotenv_path=env_path)
 from blockcypher import get_address_details
+import time
+
 
 
 def q(odd):
@@ -21,7 +23,10 @@ def q(odd):
 def p(points):
     points = float(points)
     return points
-
+def m(amount):
+    amount = Decimal(amount)
+    amount = amount.quantize(Decimal("1.00"))
+    return amount
 
 
 token = os.getenv("ps3838")
@@ -154,12 +159,6 @@ def fill_tennis_league():
         print(IDD, LEAGUE)
         con.commit()
 
-
-# get line
-#         r = requests.get('http://api.ps3838.com/v1/line?sportid=29&oddsformat=decimal&leagueid='
-#                          + ligid + '&eventID=' + pinid + '&periodNumber=0&bettype=MONEYLINE&team=DRAW',
-#                          headers={"Authorization": token})
-
 def get_sports():
     r = requests.get('http://api.ps3838.com/v1/sports', headers={"Authorization": token})
     sports = r.json()
@@ -180,6 +179,302 @@ def check_soccer_tour_by_id(a):
     data = cur.fetchone()
     print(data[0])
     return data[0]
+def check_tennis_tour_by_id(LEAGUE_ID):
+
+    cur = con.cursor()
+    cur.execute("SELECT league FROM tennis_league WHERE id=(%(LEAGUE_ID)s)", {'LEAGUE_ID':LEAGUE_ID})
+    con.commit()
+    data = cur.fetchone()
+    return data[0]
+def PIN_TENNIS_GAMES_FROM_EVENT(PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS):
+
+    print(PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS)
+    # сканнируем все рынки события
+    r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR,
+                      headers={"Authorization": token})
+    r2 = r2.json()
+
+    EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
+
+    for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
+        idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
+        if idpintemp == PIN_EVENT_ID:
+            # LineID
+            PIN_LINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
+
+            # MONEYLINE
+            ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
+            ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
+            MAX_PIN_MATCH_FT = m(r2['leagues'][0]['events'][i4]['periods'][0]['maxMoneyline'])
+            print(PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_A, ' - ', PLAYER_B, ODD_PIN_MATCH_FT_PLAYER_B,
+                  'Match, max. %sEUR' % MAX_PIN_MATCH_FT)
+
+            # HANDICAP
+            try:
+
+                POINTS_PIN_HDP_MAIN = hdp(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['hdp'])
+                ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
+                ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
+                LABEL_1 = str(POINTS_PIN_HDP_MAIN, PLAYER_A, ODD_PIN_HDP_MAIN_PLAYER_A, PLAYER_B, ODD_PIN_HDP_MAIN_PLAYER_B)
+                print('--------------------')
+            except:
+                pass
+
+            try:
+                HDP_GAMES_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'])
+                for i5 in range(1, HDP_GAMES_LEN):
+
+                    PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['altLineId'])
+                    POINTS_PIN_HDP_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['hdp'])
+                    ODD_PIN_HDP_ALT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['home'])
+                    ODD_PIN_HDP_ALT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['away'])
+                    print(POINTS_PIN_HDP_ALT, PLAYER_A, ODD_PIN_HDP_ALT_PLAYER_A, PLAYER_B, ODD_PIN_HDP_ALT_PLAYER_B)
+
+            except:
+                pass
+
+            # TOTAL
+            try:
+                POINTS_PIN_OU_MAIN = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['points'])
+                ODD_PIN_OU_MAIN_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['over'])
+                ODD_PIN_OU_MAIN_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['under'])
+                print('--------------------')
+                print(POINTS_PIN_OU_MAIN, 'Over:', ODD_PIN_OU_MAIN_OVER, 'Under:', ODD_PIN_OU_MAIN_UNDER)
+
+            except:
+                pass
+
+            try:
+                OU_ALT_OU_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['totals'])
+                for i5 in range(1, OU_ALT_OU_LEN):
+                    PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['altLineId'])
+                    POINTS_PIN_OU_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['points'])
+                    ODD_PIN_OU_ALT_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['over'])
+                    ODD_PIN_OU_ALT_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['under'])
+                    print(POINTS_PIN_OU_ALT, 'Over:', ODD_PIN_OU_ALT_OVER, 'Under:', ODD_PIN_OU_ALT_UNDER)
+            except:
+                pass
+
+        else:
+            continue
+
+    return ODD_PIN_MATCH_FT_PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_B
+
+
+
+def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS):
+
+    # сканнируем все рынки события
+    r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR,
+                      headers={"Authorization": token})
+    r2 = r2.json()
+
+    EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
+
+    for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
+        idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
+        if idpintemp == PIN_EVENT_ID:
+            # LineID
+            PIN_LINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
+
+            # MONEYLINE
+            try:
+                ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
+                ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
+                MAX_PIN_MATCH_FT = m(r2['leagues'][0]['events'][i4]['periods'][0]['maxMoneyline'])
+
+                cur = con.cursor()
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, max) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(max)s))", {'uuid': UUID, 'gametype': 'Match', 'lineid': PIN_LINEID, 'max': MAX_PIN_MATCH_FT,})
+                # con.commit()
+
+                print('+ ml')
+
+            except:
+                pass
+
+            # HANDICAP
+            try:
+
+                POINTS_PIN_HDP_MAIN = p(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['hdp'])
+                ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
+                ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
+
+                # cur = con.cursor()
+
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s))", {'uuid': UUID, 'gametype': 'HDCmain', 'lineid': PIN_LINEID, 'points': POINTS_PIN_HDP_MAIN,})
+
+                print('+ hdc main')
+
+
+            except:
+                pass
+
+            try:
+                HDP_GAMES_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'])
+                for i5 in range(1, HDP_GAMES_LEN):
+
+                    PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['altLineId'])
+                    POINTS_PIN_HDP_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['hdp'])
+                    ODD_PIN_HDP_ALT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['home'])
+                    ODD_PIN_HDP_ALT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['away'])
+
+                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points) "
+                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s))",
+                                {'uuid': UUID, 'gametype': 'HDCalt', 'altlineid': PIN_ALTLINEID,
+                                 'points': POINTS_PIN_HDP_ALT, })
+                    print('+ hdcalt')
+
+            except:
+                pass
+
+
+
+            # TOTAL
+            try:
+                POINTS_PIN_OU_MAIN = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['points'])
+                ODD_PIN_OU_MAIN_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['over'])
+                ODD_PIN_OU_MAIN_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['under'])
+
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s))",
+                            {'uuid': UUID, 'gametype': 'OUmain', 'lineid': PIN_LINEID,
+                             'points': POINTS_PIN_OU_MAIN, })
+                print('+ oumain')
+
+            except:
+                pass
+
+
+
+            try:
+                OU_ALT_OU_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['totals'])
+                for i5 in range(1, OU_ALT_OU_LEN):
+                    PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['altLineId'])
+                    POINTS_PIN_OU_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['points'])
+                    ODD_PIN_OU_ALT_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['over'])
+                    ODD_PIN_OU_ALT_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['under'])
+
+                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points) "
+                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s))",
+                                {'uuid': UUID, 'gametype': 'OUalt', 'altlineid': PIN_ALTLINEID,
+                                 'points': POINTS_PIN_OU_ALT, })
+                    print('+ oualt')
+
+            except:
+                pass
+
+            con.commit()
+            con.close()
+
+        else:
+            continue
+
+    return ODD_PIN_MATCH_FT_PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_B
+
+
+# def PIN_GAMESODDS_UPDATE(PIN_LINEID, PIN_EVENT_ID, LEAGUE_ID_STR):
+#     # сканнируем все рынки события
+#     r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR,
+#                       headers={"Authorization": token})
+#     r2 = r2.json()
+#
+#     EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
+#
+#     for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
+#         idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
+#         if idpintemp == PIN_LINEID:
+#             # LineID
+#             PIN_LINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
+#
+#             # MONEYLINE
+#             ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
+#             ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
+#             MAX_PIN_MATCH_FT = m(r2['leagues'][0]['events'][i4]['periods'][0]['maxMoneyline'])
+#             print(PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_A, ' - ', PLAYER_B, ODD_PIN_MATCH_FT_PLAYER_B,
+#                   'Match, max. %sEUR' % MAX_PIN_MATCH_FT)
+#
+#             # HANDICAP
+#             try:
+#
+#                 POINTS_PIN_HDP_MAIN = hdp(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['hdp'])
+#                 ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
+#                 ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
+#                 LABEL_1 = str(POINTS_PIN_HDP_MAIN, PLAYER_A, ODD_PIN_HDP_MAIN_PLAYER_A, PLAYER_B, ODD_PIN_HDP_MAIN_PLAYER_B)
+#                 print('--------------------')
+#             except:
+#                 pass
+#
+#             try:
+#                 HDP_GAMES_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'])
+#                 for i5 in range(1, HDP_GAMES_LEN):
+#
+#                     PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['altLineId'])
+#                     POINTS_PIN_HDP_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['hdp'])
+#                     ODD_PIN_HDP_ALT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['home'])
+#                     ODD_PIN_HDP_ALT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['away'])
+#                     print(POINTS_PIN_HDP_ALT, PLAYER_A, ODD_PIN_HDP_ALT_PLAYER_A, PLAYER_B, ODD_PIN_HDP_ALT_PLAYER_B)
+#
+#             except:
+#                 pass
+#
+#             # TOTAL
+#             try:
+#                 POINTS_PIN_OU_MAIN = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['points'])
+#                 ODD_PIN_OU_MAIN_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['over'])
+#                 ODD_PIN_OU_MAIN_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['under'])
+#                 print('--------------------')
+#                 print(POINTS_PIN_OU_MAIN, 'Over:', ODD_PIN_OU_MAIN_OVER, 'Under:', ODD_PIN_OU_MAIN_UNDER)
+#
+#             except:
+#                 pass
+#
+#             try:
+#                 OU_ALT_OU_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['totals'])
+#                 for i5 in range(1, OU_ALT_OU_LEN):
+#                     PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['altLineId'])
+#                     POINTS_PIN_OU_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['points'])
+#                     ODD_PIN_OU_ALT_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['over'])
+#                     ODD_PIN_OU_ALT_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['under'])
+#                     print(POINTS_PIN_OU_ALT, 'Over:', ODD_PIN_OU_ALT_OVER, 'Under:', ODD_PIN_OU_ALT_UNDER)
+#             except:
+#                 pass
+#
+#         else:
+#             continue
+
+
+
+def INSERT_TO_EVENTS (PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS_ISO8601):
+
+    try:
+        UUID = uuider()
+        cur = con.cursor()
+        cur.execute("INSERT INTO events (uuid, pinid, pinleagueid, homename, awayname, timeiso) VALUES ((%(uuid)s), (%(PIN_EVENT_ID)s), (%(LEAGUE_ID_STR)s), (%(PLAYER_A)s), (%(PLAYER_B)s), (%(STARTS_ISO8601)s))",
+            {'uuid': UUID, 'PIN_EVENT_ID': PIN_EVENT_ID, 'LEAGUE_ID_STR': LEAGUE_ID_STR, 'PLAYER_A': PLAYER_A, 'PLAYER_B': PLAYER_B, 'STARTS_ISO8601': STARTS_ISO8601})
+        con.commit()
+        con.close()
+        print(PLAYER_A, '-', PLAYER_B, 'добавлена в базу')
+    except:
+        print('Игра уже в базе')
+
+# в аргументе указывается uuid event
+
+
+
+    #
+    # print(EVENTS_LIST)
+    # if EVENTS_LIST==[]:
+
+
+    # idpinlist = list(dict.fromkeys(idpinlist))
+    # len_pinidlist = len(idpinlist)
+
+
+
+
+
 def get_odds_pin_moneyline_events():
 
     cur = con.cursor()
@@ -236,11 +531,8 @@ def get_odds_pin_moneyline_events():
 def update_odds_PIN():
     cur = con.cursor()
     cur.execute("SELECT uuid, game FROM odds WHERE BK = 'PIN'")
-
     con.commit()
     data = cur.fetchall()
-
-
     x = len(data)
     ligidlist = []
     eventidlist = []
@@ -333,10 +625,15 @@ def EVENT_START(start):
     datetime_obj2 = datetime.strptime(time_now, format)
 
     remains = datetime_obj - datetime_obj2
-    str_remains = str(remains)[:-3]
+    # checkdigits = str(remains)[:2]
+    # checkdigits = int(checkdigits)
+    # if checkdigits < 0:
+    #     str_remains = 'Началось'
+    # else:
+    str_remains = 'Осталось: ' + str(remains)[:-3]
 
     gamestart = datetime.strptime(starts, "%Y-%m-%dT%H:%M:%SZ") + timedelta(hours=+3)
-    date_time_starts = gamestart.strftime("%A, %d %B %H:%M /")
+    date_time_starts = gamestart.strftime("%A, %d %B %H:%M / ")
 
     return (date_time_starts, str_remains)
 
@@ -429,5 +726,11 @@ def ind_to_dec(odds=1.00):
         dec_odds = Decimal(1 + (1 / abs(odds))).quantize(TWO)
     return dec_odds
 
+# переделать в полноценный URL Generator: спорт, статусы, лиги и т.д.
+def league_list_to_str(LEAGUE_LIST):
+    LEAGUE_ID_LIST_STR = str(list(dict.fromkeys(LEAGUE_LIST)))[1:-1]
+    LEAGUE_ID_LIST_STR = re.sub('[ ]', '', LEAGUE_ID_LIST_STR)
+    # url = 'http://api.ps3838.com/v1/odds?sportid=33&islive=2&oddsformat=decimal&leagueids=' + LEAGUE_ID_LIST_STR
 
+    return LEAGUE_ID_LIST_STR
 

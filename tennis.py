@@ -105,16 +105,14 @@ def search_tennis_lines(name_to_search):
     # print(r)
     # name_to_search = input('Поиск по имени игрока:')
 
-    COUNT1 = 0
-    COUNT2 = 1
+    COUNT = 0
     SEARCH_RESULTS_LIST = []
 
     for i in range(0, LEAGUE_LEN):
 
             LEAGUE_ID = r['league'][i]['id']
-            # LEAGUE_NAME_LIST_FRESH.append(LEAGUE_NAME)
             EVENTS_IN_LEAGUE_LEN = len(r['league'][i]['events'])
-            # LEAGUE_NAME_LIST_FRESH.append(LEAGUE_NAME)
+
 
 
             for i2 in range(0, EVENTS_IN_LEAGUE_LEN):
@@ -126,15 +124,13 @@ def search_tennis_lines(name_to_search):
 
                 SEARCH_RESULTS = PIN_EVENT_ID, PLAYER_A, PLAYER_B, STARTS_ISO8601, LEAGUE_ID_FOR_FOUND_EVENT
 
-                # print(SEARCH_RESULTS)
-
                 if name_to_search in PLAYER_A:
                     SEARCH_RESULTS_LIST.append(SEARCH_RESULTS)
-                    COUNT1 += 1
+                    COUNT += 1
                     continue
                 elif name_to_search in PLAYER_B:
                     SEARCH_RESULTS_LIST.append(SEARCH_RESULTS)
-                    COUNT1 += 1
+                    COUNT += 1
                     continue
                 continue
 
@@ -144,96 +140,71 @@ def search_tennis_lines(name_to_search):
         print('По данным %s ничего не найдено' % name_to_search)
     else:
 
+        LEAGUE_NAME  = check_tennis_tour_by_id(int(LEAGUE_ID_FOR_FOUND_EVENT))
         print('Найдено событий: ', SEARCH_RESULTS_LIST_LEN)
         count3 = 1
 
         for i3 in range (0, SEARCH_RESULTS_LIST_LEN):
-            PIN_LINEID = int(SEARCH_RESULTS_LIST[i3][0])
+            PIN_EVENT_ID = int(SEARCH_RESULTS_LIST[i3][0])
             PLAYER_A = SEARCH_RESULTS_LIST[i3][1]
             PLAYER_B = SEARCH_RESULTS_LIST[i3][2]
+            STARTS_ISO8601 = SEARCH_RESULTS_LIST[i3][3]
             STARTS = EVENT_START(SEARCH_RESULTS_LIST[i3][3])
 
-            print (count3, SEARCH_RESULTS_LIST[i3][1]+' - '+SEARCH_RESULTS_LIST[i3][2], SEARCH_RESULTS_LIST[i3][0])
-            print ('Начало матча: '+STARTS[0]+' Осталось: '+ STARTS[1])
+            if count3 == 1:
+                print(STARTS[0] + STARTS[1])
+                print(SEARCH_RESULTS_LIST[i3][1] + ' - ' + SEARCH_RESULTS_LIST[i3][2] + ' * ' + LEAGUE_NAME)
 
-
+            else:
+                print(STARTS[0] + STARTS[1])
+                print(count3, SEARCH_RESULTS_LIST[i3][1] + ' - ' + SEARCH_RESULTS_LIST[i3][2] + ' * ' + LEAGUE_NAME)
+            print('*****************************************************')
             count3 += 1
 
-
-
-        SELECT_N = int(input('Enter game ID:'))-1
+        if count3 == 2:
+            SELECT_N = 0
+        else:
+            SELECT_N = int(input('Enter game ID:')) - 1
 
         PIN_EVENT_ID = SEARCH_RESULTS_LIST[SELECT_N][0]
         LEAGUE_ID_STR = str(SEARCH_RESULTS_LIST[SELECT_N][4])
 
+        PIN_TENNIS_GAMES_FROM_EVENT(PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS_ISO8601)
+        INSERT_TO_EVENTS(PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS_ISO8601)
+
+    #     SELECT_INSERT_TO_EVENTS = str(input('Добавить в базу? 1) да 2) вернуться к поиску'))
+    #
+    # if SELECT_INSERT_TO_EVENTS == str(1):
+
+# x = (search_tennis_lines('kraus'))
 
 
-
-        r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR, headers={"Authorization": token})
-        r2 = r2.json()
-
-        EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
-
-        # сканнируем все рынки события
-        for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
-            idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
-            if idpintemp == PIN_LINEID:
-                # LineID
-                PIN_LINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
-
-                # MONEYLINE
-                ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
-                ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
-
-                print(PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_A, ' - ', PLAYER_B, ODD_PIN_MATCH_FT_PLAYER_B)
-
-
-                # HANDICAP
-                try:
-                    POINTS_PIN_HDP_MAIN = hdp(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['hdp'])
-                    ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
-                    ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
-                    print('--------------------')
-                    print(POINTS_PIN_HDP_MAIN, PLAYER_A, ODD_PIN_HDP_MAIN_PLAYER_A, PLAYER_B, ODD_PIN_HDP_MAIN_PLAYER_B)
-                except:
-                    pass
-
-
-                try:
-                    HDP_GAMES_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'])
-                    for i5 in range(1, HDP_GAMES_LEN):
-                        PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['altLineId'])
-                        POINTS_PIN_HDP_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['hdp'])
-                        ODD_PIN_HDP_ALT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['home'])
-                        ODD_PIN_HDP_ALT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['away'])
-                        print(POINTS_PIN_HDP_ALT, PLAYER_A, ODD_PIN_HDP_ALT_PLAYER_A, PLAYER_B, ODD_PIN_HDP_ALT_PLAYER_B)
-                        print('--------------------')
-                except:
-                    pass
-
-
-                # TOTAL
-                try:
-                    POINTS_PIN_OU_MAIN = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['points'])
-                    ODD_PIN_OU_MAIN_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['over'])
-                    ODD_PIN_OU_MAIN_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['under'])
-                    print(POINTS_PIN_OU_MAIN, 'Over:', ODD_PIN_OU_MAIN_OVER, 'Under:', ODD_PIN_OU_MAIN_UNDER)
-                except:
-                    pass
-
-                try:
-                    OU_ALT_OU_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['totals'])
-                    for i5 in range(1, OU_ALT_OU_LEN):
-                        PIN_ALTLINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['altLineId'])
-                        POINTS_PIN_OU_ALT = p(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['points'])
-                        ODD_PIN_OU_ALT_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['over'])
-                        ODD_PIN_OU_ALT_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['under'])
-                        print(POINTS_PIN_OU_ALT, 'OVER:', ODD_PIN_OU_ALT_OVER, 'UNDER:', ODD_PIN_OU_ALT_UNDER)
-                except:
-                    pass
-
-            else:
-                continue
+# def PIN_UPDATE_GAMES_AND_ODDS_FROM_EVENTS():
+#     EVENT_UUID_LIST = []
+#     PIN_EVENTID_LIST = []
+#     LEAGUE_LIST = []
+#
+#
+#     cur = con.cursor()
+#     cur.execute("SELECT uuid, pinid, pinleagueid FROM events")
+#     con.commit()
+#     EVENTS_DATA = cur.fetchall()
+#     print(EVENTS_DATA[0])
+#     EVENTS_DATA_LEN = len(EVENTS_DATA)
+#
+#     for i in range(0, EVENTS_DATA_LEN):
+#         EVENT_UUID_LIST.append(EVENTS_DATA[i][0])
+#         PIN_EVENTID_LIST.append(EVENTS_DATA[i][1])
+#         LEAGUE_LIST.append(EVENTS_DATA[i][2])
+#     con.close()
+#
+#     LEAGUE_LIST = league_list_to_str(LEAGUE_LIST)
+#
+#
+#     r = requests.get(URL, headers={"Authorization": token})
+#     r = r.json()
+#     #
+#     # print(r)
 
 
 
@@ -241,9 +212,4 @@ def search_tennis_lines(name_to_search):
 
 
 
-
-
-
-
-
-x = (search_tennis_lines('Grabher'))
+# PIN_UPDATE_GAMES_AND_ODDS_FROM_EVENTS()

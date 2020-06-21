@@ -1,13 +1,13 @@
 from functions import *
-import sched, time
-
-s = sched.scheduler(time.time, time.sleep)
-def do_something(sc):
-    print(btc_usd())
-    s.enter(5, 1, do_something, (sc,))
-
-s.enter(5, 1, do_something, (s,))
-s.run()
+# import sched, time
+#
+# s = sched.scheduler(time.time, time.sleep)
+# def do_something(sc):
+#     print(btc_usd())
+#     s.enter(5, 1, do_something, (sc,))
+#
+# s.enter(5, 1, do_something, (s,))
+# s.run()
 
 
 
@@ -221,3 +221,33 @@ s.run()
 #
 #
 # f100()
+
+def INSERT_GAMES_FROM_EVENT():
+
+    cur = con.cursor()
+    cur.execute("SELECT uuid, pinid, pinleagueid, homename, awayname, timeiso FROM events")
+    con.commit()
+    EVENTS_LIST = cur.fetchall()
+
+    EVENTS_LIST_LEN = len(EVENTS_LIST)
+    for i in range(0, EVENTS_LIST_LEN):
+        UUID = str(EVENTS_LIST[i][0])
+        PIN_EVENTID = int(EVENTS_LIST[i][1])
+        PIN_LEAGUEID = str(EVENTS_LIST[i][2])
+        PLAYER_A = str(EVENTS_LIST[i][3])
+        PLAYER_B = str(EVENTS_LIST[i][4])
+        TIMEISO = str(EVENTS_LIST[i][5])
+
+
+        cur = con.cursor()
+        cur.execute("SELECT uuid FROM pin_tennis_lines WHERE uuid = (%(UUID)s) AND gametype = 'jjj'", {'UUID':UUID})
+        con.commit()
+        GAME = cur.fetchall()
+
+
+    if GAME == []:
+        GAME_LIST = (PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENTID, PIN_LEAGUEID, PLAYER_A, PLAYER_B, TIMEISO))
+
+
+
+INSERT_GAMES_FROM_EVENT()
