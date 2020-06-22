@@ -176,7 +176,9 @@ def search_tennis_lines(name_to_search):
     #
     # if SELECT_INSERT_TO_EVENTS == str(1):
 
-# x = (search_tennis_lines('kraus'))
+
+
+x = (search_tennis_lines('kirkin'))
 
 
 # def PIN_UPDATE_GAMES_AND_ODDS_FROM_EVENTS():

@@ -263,6 +263,8 @@ def PIN_TENNIS_GAMES_FROM_EVENT(PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B,
 
 
 def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PLAYER_B, STARTS):
+    cur = con.cursor()
+
 
     # сканнируем все рынки события
     r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR,
@@ -279,19 +281,25 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
 
             # MONEYLINE
             try:
+
+
+
                 ODD_PIN_MATCH_FT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['home'])
                 ODD_PIN_MATCH_FT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['moneyline']['away'])
                 MAX_PIN_MATCH_FT = m(r2['leagues'][0]['events'][i4]['periods'][0]['maxMoneyline'])
+                #
 
-                cur = con.cursor()
-                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, max) "
-                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(max)s))", {'uuid': UUID, 'gametype': 'Match', 'lineid': PIN_LINEID, 'max': MAX_PIN_MATCH_FT,})
-                # con.commit()
-
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, max, pineventid) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(max)s), (%(pineventid)s))", {'uuid': UUID, 'gametype': 'Match', 'lineid': PIN_LINEID, 'max': MAX_PIN_MATCH_FT, 'pineventid': PIN_EVENT_ID,})
                 print('+ ml')
 
-            except:
-                pass
+
+
+            except psycopg2.DatabaseError as error:
+                print('1', error)
+
+
+
 
             # HANDICAP
             try:
@@ -300,16 +308,18 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
                 ODD_PIN_HDP_MAIN_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['home'])
                 ODD_PIN_HDP_MAIN_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][0]['away'])
 
-                # cur = con.cursor()
-
-                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points) "
-                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s))", {'uuid': UUID, 'gametype': 'HDCmain', 'lineid': PIN_LINEID, 'points': POINTS_PIN_HDP_MAIN,})
+                cur = con.cursor()
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points, pineventid) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s), (%(pineventid)s))", {'uuid': UUID, 'gametype': 'HDCmain', 'lineid': PIN_LINEID, 'points': POINTS_PIN_HDP_MAIN, 'pineventid': PIN_EVENT_ID,})
 
                 print('+ hdc main')
 
 
-            except:
-                pass
+
+            except psycopg2.DatabaseError as error:
+                print('3', error)
+
+
 
             try:
                 HDP_GAMES_LEN = len(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'])
@@ -320,16 +330,17 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
                     ODD_PIN_HDP_ALT_PLAYER_A = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['home'])
                     ODD_PIN_HDP_ALT_PLAYER_B = q(r2['leagues'][0]['events'][i4]['periods'][0]['spreads'][i5]['away'])
 
-                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points) "
-                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s))",
+                    cur = con.cursor()
+                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points, pineventid) "
+                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s), (%(pineventid)s))",
                                 {'uuid': UUID, 'gametype': 'HDCalt', 'altlineid': PIN_ALTLINEID,
-                                 'points': POINTS_PIN_HDP_ALT, })
+                                 'points': POINTS_PIN_HDP_ALT, 'pineventid': PIN_EVENT_ID,})
                     print('+ hdcalt')
 
-            except:
-                pass
 
 
+            except psycopg2.DatabaseError as error:
+                print('4', error)
 
             # TOTAL
             try:
@@ -337,14 +348,14 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
                 ODD_PIN_OU_MAIN_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['over'])
                 ODD_PIN_OU_MAIN_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][0]['under'])
 
-                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points) "
-                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s))",
+                cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, lineid, points, pineventid) "
+                            "VALUES ((%(uuid)s), (%(gametype)s), (%(lineid)s), (%(points)s), (%(pineventid)s))",
                             {'uuid': UUID, 'gametype': 'OUmain', 'lineid': PIN_LINEID,
-                             'points': POINTS_PIN_OU_MAIN, })
+                             'points': POINTS_PIN_OU_MAIN,  'pineventid': PIN_EVENT_ID,})
                 print('+ oumain')
 
-            except:
-                pass
+            except psycopg2.DatabaseError as error:
+                print('5', error)
 
 
 
@@ -356,14 +367,15 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
                     ODD_PIN_OU_ALT_OVER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['over'])
                     ODD_PIN_OU_ALT_UNDER = q(r2['leagues'][0]['events'][i4]['periods'][0]['totals'][i5]['under'])
 
-                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points) "
-                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s))",
+                    cur.execute("INSERT INTO pin_tennis_lines (uuid, gametype, altlineid, points, pineventid) "
+                                "VALUES ((%(uuid)s), (%(gametype)s), (%(altlineid)s), (%(points)s), (%(pineventid)s))",
                                 {'uuid': UUID, 'gametype': 'OUalt', 'altlineid': PIN_ALTLINEID,
-                                 'points': POINTS_PIN_OU_ALT, })
-                    print('+ oualt')
+                                 'points': POINTS_PIN_OU_ALT,  'pineventid': PIN_EVENT_ID,})
+                    print('+ oualt !')
 
-            except:
-                pass
+            except psycopg2.DatabaseError as error:
+                print('6', error)
+
 
             con.commit()
             con.close()
@@ -371,7 +383,249 @@ def PIN_TENNIS_GAMES_FROM_EVENT2(UUID, PIN_EVENT_ID, LEAGUE_ID_STR, PLAYER_A, PL
         else:
             continue
 
-    return ODD_PIN_MATCH_FT_PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_B
+
+
+def update22():
+
+    r = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal',
+                      headers={"Authorization": token})
+    r = r.json()
+    print(r)
+
+    LEAGUE_LEN = len(r['leagues'])
+
+    cur = con.cursor()
+    cur.execute("SELECT * FROM pin_tennis_lines")
+    con.commit()
+    GAMES_LIST = cur.fetchall()
+
+
+    GAMES_LIST_LEN = len(GAMES_LIST)
+    print(GAMES_LIST_LEN)
+
+
+    for i0 in range(0, GAMES_LIST_LEN):
+        UUID = str(GAMES_LIST[i0][0])
+        GAME_TYPE = str(GAMES_LIST[i0][1])
+        GAME_POINTS = str(GAMES_LIST[i0][4])
+        EVENT_ID = str(GAMES_LIST[i0][9])
+
+        if GAME_TYPE == 'Match':
+
+
+            for i in range(0, LEAGUE_LEN):
+                EVENTS_IN_LEAGUE_COUNT = len(r['leagues'][i]['events'])
+                for i2 in range(0, EVENTS_IN_LEAGUE_COUNT):
+                    EVENT_ID_TEMP = str(r['leagues'][i]['events'][i2]['id'])
+                    if EVENT_ID_TEMP == EVENT_ID:
+
+                        try:
+
+                            ODD_PIN_MATCH_FT_PLAYER_A = q(
+                                r['leagues'][i]['events'][i2]['periods'][0]['moneyline']['home'])
+                            ODD_PIN_MATCH_FT_PLAYER_B = q(
+                                r['leagues'][i]['events'][i2]['periods'][0]['moneyline']['away'])
+                            MAX_MONEYLINE = m(
+                                r['leagues'][i]['events'][i2]['periods'][0]['maxMoneyline'])
+                            cur = con.cursor()
+
+                            cur.execute("UPDATE pin_tennis_lines "
+                                        "SET odd1 = (%s),"
+                                        "odd2 = (%s),"
+                                        "max = (%s)"
+                                        "WHERE pineventid = (%s) AND gametype = 'Match'",
+                                        (ODD_PIN_MATCH_FT_PLAYER_A, ODD_PIN_MATCH_FT_PLAYER_B, MAX_MONEYLINE, int(EVENT_ID)))
+
+                            con.commit()
+                            print('ml odds updated')
+
+
+                        except psycopg2.DatabaseError as error:
+                            print('update ml', error)
+
+        if GAME_TYPE == 'HDCmain':
+
+
+            for i3 in range(0, LEAGUE_LEN):
+                EVENTS_IN_LEAGUE_COUNT = len(r['leagues'][i3]['events'])
+                for i4 in range(0, EVENTS_IN_LEAGUE_COUNT):
+                    EVENT_ID_TEMP = str(r['leagues'][i3]['events'][i4]['id'])
+                    if EVENT_ID_TEMP == EVENT_ID:
+
+                        try:
+
+                            ODD_PIN_HDC_MAIN_PLAYER_A = q(
+                                r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][0]['home'])
+                            ODD_PIN_HDC_MAIN_PLAYER_B = q(
+                                r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][0]['away'])
+                            MAX_HDC = m(
+                                r['leagues'][i3]['events'][i4]['periods'][0]['maxSpread'])
+                            cur = con.cursor()
+                            print('6565656')
+                            cur.execute("UPDATE pin_tennis_lines "
+                                        "SET odd1 = (%s),"
+                                        "odd2 = (%s),"
+                                        "max = (%s)"
+                                        "WHERE pineventid = (%s) AND gametype = 'HDCmain'",
+                                        (ODD_PIN_HDC_MAIN_PLAYER_A, ODD_PIN_HDC_MAIN_PLAYER_B, MAX_HDC, int(EVENT_ID)))
+
+                            con.commit()
+                            print('hdc odds updated')
+
+                        except psycopg2.DatabaseError as error:
+                            print('update hdc', error)
+
+        if GAME_TYPE == 'HDCalt':
+
+
+            for i3 in range(0, LEAGUE_LEN):
+                EVENTS_IN_LEAGUE_COUNT = len(r['leagues'][i3]['events'])
+                for i4 in range(0, EVENTS_IN_LEAGUE_COUNT):
+                    EVENT_ID_TEMP = str(r['leagues'][i3]['events'][i4]['id'])
+                    if EVENT_ID_TEMP == EVENT_ID:
+
+                        ALTHDC_MARKET_LEN =  len(r['leagues'][i3]['events'][i4]['periods'][0]['spreads'])
+
+                        try:
+                            for POINTS_SEARCH in range (0, ALTHDC_MARKET_LEN):
+                                POINTS_TMP = str(r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][POINTS_SEARCH]['hdp'])
+                                print(POINTS_TMP, GAME_POINTS, r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][POINTS_SEARCH]['home'])
+                                if POINTS_TMP == GAME_POINTS:
+
+                                    ODD_HDC_ALT_PLAYER_A = q(
+                                        r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][POINTS_SEARCH]['home'])
+                                    ODD_HDC_ALT_PLAYER_B = q(
+                                        r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][POINTS_SEARCH]['away'])
+                                    MAX_HDC = m(r['leagues'][i3]['events'][i4]['periods'][0]['maxSpread'])
+                                    cur = con.cursor()
+
+                                    DIGIT_POINTS = float(GAME_POINTS)
+                                    print('digit points', DIGIT_POINTS)
+
+                                    cur.execute("UPDATE pin_tennis_lines "
+                                                "SET odd1 = (%s),"
+                                                "odd2 = (%s),"
+                                                "max = (%s)"                                                
+                                                "WHERE pineventid = (%s) AND gametype = 'HDCalt' AND points = (%s)",
+                                                (ODD_HDC_ALT_PLAYER_A, ODD_HDC_ALT_PLAYER_B, MAX_HDC, int(EVENT_ID), DIGIT_POINTS))
+
+                                    con.commit()
+                                    print('ALT hdc odds updated')
+
+                        except psycopg2.DatabaseError as error:
+                            print('update hdc', error)
+
+        if GAME_TYPE == 'OUmain':
+
+            print('huhu')
+            for i5 in range(0, LEAGUE_LEN):
+                EVENTS_IN_LEAGUE_COUNT = len(r['leagues'][i5]['events'])
+                for i6 in range(0, EVENTS_IN_LEAGUE_COUNT):
+                    EVENT_ID_TEMP = str(r['leagues'][i5]['events'][i6]['id'])
+                    if EVENT_ID_TEMP == EVENT_ID:
+
+                        # try:
+
+                            ODD_PIN_OU_MAIN_OVER = q(
+                                r['leagues'][i5]['events'][i6]['periods'][0]['totals'][0]['over'])
+                            ODD_PIN_OU_MAIN_UNDER = q(
+                                r['leagues'][i5]['events'][i6]['periods'][0]['totals'][0]['under'])
+                            MAX_OU = m(
+                                r['leagues'][i5]['events'][i6]['periods'][0]['maxTotal'])
+                            cur = con.cursor()
+
+                            cur.execute("UPDATE pin_tennis_lines "
+                                        "SET odd1 = (%s),"
+                                        "odd2 = (%s),"
+                                        "max = (%s)"
+                                        "WHERE pineventid = (%s) AND gametype = 'OUmain'",
+                                        (ODD_PIN_OU_MAIN_OVER, ODD_PIN_OU_MAIN_UNDER, MAX_OU, int(EVENT_ID)))
+
+                            con.commit()
+                            print('total odds updated')
+
+
+                        # except psycopg2.DatabaseError as error:
+                        #     print('update total', error)
+
+        if GAME_TYPE == 'OUalt':
+
+
+            for i3 in range(0, LEAGUE_LEN):
+                EVENTS_IN_LEAGUE_COUNT = len(r['leagues'][i3]['events'])
+                for i4 in range(0, EVENTS_IN_LEAGUE_COUNT):
+                    EVENT_ID_TEMP = str(r['leagues'][i3]['events'][i4]['id'])
+                    if EVENT_ID_TEMP == EVENT_ID:
+
+                        ALTHDC_MARKET_LEN =  len(r['leagues'][i3]['events'][i4]['periods'][0]['totals'])
+
+                        try:
+                            for POINTS_SEARCH in range (0, ALTHDC_MARKET_LEN):
+                                POINTS_TMP = str(r['leagues'][i3]['events'][i4]['periods'][0]['totals'][POINTS_SEARCH]['points'])
+                                print(POINTS_TMP, GAME_POINTS, r['leagues'][i3]['events'][i4]['periods'][0]['spreads'][POINTS_SEARCH]['home'])
+                                if POINTS_TMP == GAME_POINTS:
+
+                                    ODD_OU_ALT_PLAYER_A = q(
+                                        r['leagues'][i3]['events'][i4]['periods'][0]['totals'][POINTS_SEARCH]['over'])
+                                    ODD_OU_ALT_PLAYER_B = q(
+                                        r['leagues'][i3]['events'][i4]['periods'][0]['totals'][POINTS_SEARCH]['under'])
+                                    MAX_OU = m(r['leagues'][i3]['events'][i4]['periods'][0]['maxTotal'])
+
+                                    cur = con.cursor()
+
+                                    DIGIT_POINTS = float(GAME_POINTS)
+                                    print('digit points', DIGIT_POINTS)
+
+                                    cur.execute("UPDATE pin_tennis_lines "
+                                                "SET odd1 = (%s),"
+                                                "odd2 = (%s),"
+                                                "max = (%s)"                                                
+                                                "WHERE pineventid = (%s) AND gametype = 'OUalt' AND points = (%s)",
+                                                (ODD_OU_ALT_PLAYER_A, ODD_OU_ALT_PLAYER_B, MAX_OU, int(EVENT_ID), DIGIT_POINTS))
+
+                                    con.commit()
+                                    print('ALT OU odds updated')
+
+                        except psycopg2.DatabaseError as error:
+                            print('update hdc', error)
+
+
+update22()
+
+
+
+
+
+
+
+    # сканнируем все рынки события
+    # r2 = requests.get('http://api.ps3838.com/v1/odds?sportid=33&oddsformat=decimal&leagueids=' + LEAGUE_ID_STR,
+    #                   headers={"Authorization": token})
+    # r2 = r2.json()
+    #
+    # EVENTS_IN_LEAGUE_LEN = len(r2['leagues'][0]['events'])
+    #
+    # for i4 in range(0, EVENTS_IN_LEAGUE_LEN):
+    #     idpintemp = int(r2['leagues'][0]['events'][i4]['id'])
+    #     if idpintemp == PIN_EVENT_ID:
+    #         # LineID
+    #         PIN_LINEID = int(r2['leagues'][0]['events'][i4]['periods'][0]['lineId'])
+
+    # try:
+    #     # cur = con.cursor()
+    #     print('kkkkk')
+    #     cur.execute("UPDATE pin_tennis_lines "
+    #                 "SET odd1 = (%s),"
+    #                 "odd2 = (%s),"
+    #                 "max = (%s)"
+    #                 "WHERE uuid = (%s) AND gametype = (%s)",
+    #                 (4.05, 4.15, 500, 'a4e4d14d73fb4e4b9f60979ae527b3c3', 'Match'))
+    #
+    #     print('ml odds updated')
+    #
+    # except psycopg2.DatabaseError as error:
+    #     print('update ml', error)
+
 
 
 # def PIN_GAMESODDS_UPDATE(PIN_LINEID, PIN_EVENT_ID, LEAGUE_ID_STR):
